@@ -1,0 +1,10 @@
+/target/
+
+# 本地配置（请使用 config.example.toml 作为模板）
+/config.toml
+
+# 下载的节假日数据（由脚本获取；不要直接提交上游数据文件）
+/data/CN/*.json
+
+# Rust
+**/*.rs.bk
