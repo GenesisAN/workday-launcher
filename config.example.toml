@@ -16,7 +16,7 @@ args = []
 # 节假日 JSON 文件列表（支持多个年份）
 # 数据来源（JSON）：https://unpkg.com/holiday-calendar@1.3.0/data/CN/
 # 注意：请自行遵循上游数据的版权/许可条款。
-holiday_json_files = ["./data/CN/2025.json", "./data/CN/2026.json"]
+holiday_json_files = ["./data/2025.json", "./data/2026.json"]
 
 # 可选：找不到年份/日期时的默认行为
 # "allow" 表示当日不在任何json里时，仅按周末/工作日规则判断

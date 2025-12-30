@@ -81,12 +81,20 @@ struct HolidayDate {
 #[derive(Debug, Default)]
 struct HolidayIndex {
     map: HashMap<NaiveDate, HolidayDate>,
+    region: Option<String>,
 }
 
 impl HolidayIndex {
     fn insert_file(&mut self, file: HolidayFile) -> Result<()> {
-        if file.region != "CN" {
-            return Err(anyhow!("Unsupported region: {}", file.region));
+        match self.region.as_deref() {
+            None => self.region = Some(file.region.clone()),
+            Some(r) if r == file.region => {}
+            Some(r) => {
+                return Err(anyhow!(
+                    "mixed regions in holiday json files: already loaded {r}, but got {}",
+                    file.region
+                ));
+            }
         }
         for d in file.dates {
             let date = NaiveDate::parse_from_str(&d.date, "%Y-%m-%d")

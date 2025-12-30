@@ -6,7 +6,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path | Split-Path -Parent
-$dataDir = Join-Path $repoRoot "data\$Region"
+$dataDir = Join-Path $repoRoot "data"
 
 New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
 
