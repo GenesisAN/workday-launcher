@@ -8,8 +8,9 @@
 2. 生成本地配置：
    - 复制 `config.example.toml` 为 `config.toml`，并按需修改 `command/args/workdir/env`。
 3. 获取节假日数据（下载到 `data/*.json`）：
-   - PowerShell（默认 CN）：`powershell -ExecutionPolicy Bypass -File .\scripts\fetch-holidays.ps1 -Years 2025,2026`
-   - 切换地区示例：`powershell -ExecutionPolicy Bypass -File .\scripts\fetch-holidays.ps1 -Region JP -Years 2025,2026`
+   - Git Bash / macOS / Linux（默认 CN）：`bash ./scripts/fetch-holidays.sh --years 2025,2026`
+   - 切换地区示例：`bash ./scripts/fetch-holidays.sh --region JP --years 2025,2026`
+   - PowerShell（可选）：`powershell -ExecutionPolicy Bypass -File .\scripts\fetch-holidays.ps1 -Years 2025,2026`
 4. 运行：
    - `cargo run`
 
