@@ -23,6 +23,10 @@ pub struct AppConfig {
     /// 找不到日期时的默认行为："allow" | "deny"
     #[serde(default = "default_missing_policy")]
     pub missing_policy: String,
+
+    /// 反转模式：true 时只在节假日/周末执行，工作日跳过
+    #[serde(default)]
+    pub invert: bool,
 }
 
 fn default_missing_policy() -> String {
@@ -101,7 +105,16 @@ pub enum Decision {
     Skip { reason: String },
 }
 
-pub fn decide(date: NaiveDate, idx: &HolidayIndex, missing_policy: &str) -> Decision {
+pub fn decide(date: NaiveDate, idx: &HolidayIndex, missing_policy: &str, invert: bool) -> Decision {
+    let decision = decide_normal(date, idx, missing_policy);
+    if invert {
+        invert_decision(decision)
+    } else {
+        decision
+    }
+}
+
+fn decide_normal(date: NaiveDate, idx: &HolidayIndex, missing_policy: &str) -> Decision {
     if let Some(h) = idx.get(date) {
         match h.kind.as_str() {
             "transfer_workday" => {
@@ -135,6 +148,17 @@ pub fn decide(date: NaiveDate, idx: &HolidayIndex, missing_policy: &str) -> Deci
             reason: "date not found in holiday json (missing_policy=deny)".to_string(),
         },
         _ => weekday_rule(date),
+    }
+}
+
+fn invert_decision(decision: Decision) -> Decision {
+    match decision {
+        Decision::Run { reason } => Decision::Skip {
+            reason: format!("[inverted] {}", reason),
+        },
+        Decision::Skip { reason } => Decision::Run {
+            reason: format!("[inverted] {}", reason),
+        },
     }
 }
 

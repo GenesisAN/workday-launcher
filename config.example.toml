@@ -23,6 +23,14 @@ holiday_json_files = ["./data/2025.json", "./data/2026.json"]
 # "deny"  表示当日不在任何json里时，直接不执行（更保守）
 missing_policy = "allow"
 
+# 可选：反转模式（默认 false）
+# true  表示只在节假日/周末执行，工作日跳过
+# false 表示只在工作日执行，节假日/周末跳过（默认行为）
+# 注意：反转模式下 missing_policy 同样生效
+#   - "allow" + invert：周末执行，工作日跳过
+#   - "deny"  + invert：日期不在json里时直接不执行
+invert = false
+
 # 可选：环境变量
 [env]
 RUST_LOG = "info"

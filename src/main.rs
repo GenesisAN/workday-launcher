@@ -67,7 +67,7 @@ fn main() -> Result<()> {
             .ok_or_else(|| anyhow!("failed to get local date"))?
     };
 
-    let decision = decide(date, &idx, &cfg.missing_policy);
+    let decision = decide(date, &idx, &cfg.missing_policy, cfg.invert);
 
     match decision {
         Decision::Run { reason } => {

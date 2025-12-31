@@ -31,7 +31,7 @@ fn weekday_runs_when_missing_and_allow() {
     // 期望：仅按 weekday_rule 判断：工作日 -> 运行。
     let idx = HolidayIndex::new();
     let d = NaiveDate::from_ymd_opt(2025, 12, 30).unwrap(); // Tue
-    let got = decide(d, &idx, "allow");
+    let got = decide(d, &idx, "allow", false);
     assert_eq!(got, Decision::Run { reason: "weekday".to_string() });
 }
 
@@ -43,7 +43,7 @@ fn weekend_skips_when_missing_and_allow() {
     // 期望：仅按 weekday_rule 判断：周末 -> 跳过。
     let idx = HolidayIndex::new();
     let d = NaiveDate::from_ymd_opt(2026, 1, 3).unwrap(); // Sat
-    let got = decide(d, &idx, "allow");
+    let got = decide(d, &idx, "allow", false);
     assert_eq!(got, Decision::Skip { reason: "weekend".to_string() });
 }
 
@@ -55,7 +55,7 @@ fn missing_policy_deny_always_skips() {
     // 期望：直接跳过（更保守），不再按周末/工作日规则判断。
     let idx = HolidayIndex::new();
     let d = NaiveDate::from_ymd_opt(2025, 12, 30).unwrap();
-    let got = decide(d, &idx, "deny");
+    let got = decide(d, &idx, "deny", false);
     assert_eq!(
         got,
         Decision::Skip {
@@ -76,7 +76,7 @@ fn public_holiday_skips_even_if_weekday() {
     let d = NaiveDate::from_ymd_opt(2025, 10, 1).unwrap();
     idx.insert_entry(d, hd("2025-10-01", "public_holiday", "National Day"));
 
-    let got = decide(d, &idx, "allow");
+    let got = decide(d, &idx, "allow", false);
     assert!(matches!(got, Decision::Skip { .. }));
     if let Decision::Skip { reason } = got {
         assert!(reason.contains("public_holiday"));
@@ -95,7 +95,7 @@ fn transfer_workday_runs_even_if_weekend() {
     let d = NaiveDate::from_ymd_opt(2025, 10, 11).unwrap(); // Sat
     idx.insert_entry(d, hd("2025-10-11", "transfer_workday", "Adjusted Workday"));
 
-    let got = decide(d, &idx, "allow");
+    let got = decide(d, &idx, "allow", false);
     assert!(matches!(got, Decision::Run { .. }));
     if let Decision::Run { reason } = got {
         assert!(reason.contains("transfer_workday"));
@@ -113,10 +113,79 @@ fn unknown_kind_falls_back_to_weekday_rule_with_reason() {
     let d = NaiveDate::from_ymd_opt(2025, 12, 30).unwrap(); // Tue
     idx.insert_entry(d, hd("2025-12-30", "company_event", "Foo"));
 
-    let got = decide(d, &idx, "allow");
+    let got = decide(d, &idx, "allow", false);
     assert!(matches!(got, Decision::Run { .. }));
     if let Decision::Run { reason } = got {
         assert!(reason.contains("unknown holiday type"));
         assert!(reason.contains("weekday"));
+    }
+}
+
+// ========== 反转模式测试 ==========
+
+#[test]
+fn invert_weekday_skips() {
+    // 用例目的：反转模式下，工作日应该跳过
+    let idx = HolidayIndex::new();
+    let d = NaiveDate::from_ymd_opt(2025, 12, 30).unwrap(); // Tue
+    let got = decide(d, &idx, "allow", true);
+    assert!(matches!(got, Decision::Skip { .. }));
+    if let Decision::Skip { reason } = got {
+        assert!(reason.contains("[inverted]"));
+    }
+}
+
+#[test]
+fn invert_weekend_runs() {
+    // 用例目的：反转模式下，周末应该执行
+    let idx = HolidayIndex::new();
+    let d = NaiveDate::from_ymd_opt(2026, 1, 3).unwrap(); // Sat
+    let got = decide(d, &idx, "allow", true);
+    assert!(matches!(got, Decision::Run { .. }));
+    if let Decision::Run { reason } = got {
+        assert!(reason.contains("[inverted]"));
+    }
+}
+
+#[test]
+fn invert_public_holiday_runs() {
+    // 用例目的：反转模式下，节假日应该执行（原本是跳过）
+    let mut idx = HolidayIndex::new();
+    let d = NaiveDate::from_ymd_opt(2025, 10, 1).unwrap();
+    idx.insert_entry(d, hd("2025-10-01", "public_holiday", "National Day"));
+
+    let got = decide(d, &idx, "allow", true);
+    assert!(matches!(got, Decision::Run { .. }));
+    if let Decision::Run { reason } = got {
+        assert!(reason.contains("[inverted]"));
+        assert!(reason.contains("public_holiday"));
+    }
+}
+
+#[test]
+fn invert_transfer_workday_skips() {
+    // 用例目的：反转模式下，调休补班日应该跳过（原本是执行）
+    let mut idx = HolidayIndex::new();
+    let d = NaiveDate::from_ymd_opt(2025, 10, 11).unwrap(); // Sat
+    idx.insert_entry(d, hd("2025-10-11", "transfer_workday", "Adjusted Workday"));
+
+    let got = decide(d, &idx, "allow", true);
+    assert!(matches!(got, Decision::Skip { .. }));
+    if let Decision::Skip { reason } = got {
+        assert!(reason.contains("[inverted]"));
+        assert!(reason.contains("transfer_workday"));
+    }
+}
+
+#[test]
+fn invert_missing_policy_deny_becomes_run() {
+    // 用例目的：反转模式下，missing_policy=deny 原本是 Skip，反转后变成 Run
+    let idx = HolidayIndex::new();
+    let d = NaiveDate::from_ymd_opt(2025, 12, 30).unwrap();
+    let got = decide(d, &idx, "deny", true);
+    assert!(matches!(got, Decision::Run { .. }));
+    if let Decision::Run { reason } = got {
+        assert!(reason.contains("[inverted]"));
+        assert!(reason.contains("missing_policy=deny"));
     }
 }
